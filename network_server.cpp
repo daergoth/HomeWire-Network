@@ -27,7 +27,10 @@ void loop() {
     int dataCount = mesh_handler.readAvailableData(sensorBuffer);
     
     for (int i = 0; i < dataCount; ++i) {
-        socket_handler.sendString(message_converter.convertSensorData(sensorBuffer[i]));
+        if (!socket_handler.sendString(message_converter.convertSensorData(sensorBuffer[i]))) {
+			socket_handler.connect();
+			break;
+		}
     }
     
     sensorBuffer.clear();

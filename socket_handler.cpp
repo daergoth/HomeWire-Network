@@ -17,8 +17,13 @@ bool SocketHandler::sendString(std::string message)
     //std::cerr << "Socket out: "<< message << std::endl;
     
     message.append("\n");
+	
+	try {
+		socket.write_some(boost::asio::buffer(message));
+	} catch (std::exception& e) {
+		return false;
+	}
     
-    socket.write_some(boost::asio::buffer(message));
     
-    return false;
+    return true;
 }
