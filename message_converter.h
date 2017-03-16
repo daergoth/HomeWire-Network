@@ -6,12 +6,16 @@
 
 class MessageConverter {
 public:
-    std::string convertSensorData(sensor_data data);
+    static MessageConverter& getInstance();
 
-    
+    std::string convertSensorDataToJson(sensor_data data);
+
+    actor_command convertJsonToActorCommand(std::string command);
 private:
+    static MessageConverter instance;
 
-    
+    MessageConverter() = default;
+
 };
 
 #endif

@@ -1,13 +1,27 @@
 #include "mesh_handler.h"
+#include "socket_handler.h"
+#include "message_converter.h"
 
+MeshHandler MeshHandler::instance{};
+
+MeshHandler& MeshHandler::getInstance() {
+  return instance;
+}
 
 void MeshHandler::setupMesh()
 {
     mesh.setNodeID(0);
     mesh.begin(108, RF24_250KBPS);
-    
+
     radio.printDetails();
 }
+
+boost::thread MeshHandler::startListening() {
+  std::cerr << "MeshHandler listening..." << std::endl;
+
+  return boost::thread(boost::bind(&MeshHandler::loop, this));
+}
+
 
 void MeshHandler::updateMesh()
 {
@@ -17,53 +31,71 @@ void MeshHandler::updateMesh()
 
 int MeshHandler::readAvailableData(std::vector<sensor_data>& buffer)
 {
-  struct inner_sensor_data {
-    float data;
-    char type[15];
-  };
-    
   int dataCount = 0;
-    
+
   while(network.available())
   {
     RF24NetworkHeader header;
     network.peek(header);
-        
-    inner_sensor_data dat;
-        
+
+    radio_sensor_data dat;
+
     switch(header.type)
     {
-      case 'S': 
+      case 'S':
       {
-        network.read(header,&dat,sizeof(dat)); 
-            
+        network.read(header,&dat,sizeof(dat));
+
         sensor_data tmp {mesh.getNodeID(header.from_node), dat.data, std::string(dat.type)};
-            
+
         printf("Rcv sensor data from ID#%d (addr: %d): type:%s data:%f \n", tmp.id, header.from_node, tmp.type.c_str(), tmp.data);
-            
+
         buffer.push_back(tmp);
-        
+
         dataCount++;
       }
         break;
-      default:  
-        network.read(header,0,0); 
-        printf("Rcv bad type %d from ID %o (addr: %o)\n",header.type,mesh.getNodeID(header.from_node), header.from_node); 
+      default:
+        network.read(header,0,0);
+        printf("Rcv bad type %d from ID %o (addr: %o)\n",header.type,mesh.getNodeID(header.from_node), header.from_node);
         break;
     }
-    
+
   }
   return dataCount;
 }
 
+bool MeshHandler::writeToActor(actor_command command) {
+  radio_actor_command tmp{command.targetState};
+
+  return mesh.write(&tmp, 'A', sizeof(command), command.id);
+}
 
 void MeshHandler::printAddressTable()
 {
-    printf("\n");
-    printf("********Assigned Addresses********\n");
-     for(int i=0; i<mesh.addrListTop; i++){
-       printf("NodeID: %u RF24Network Address: %d\n", mesh.addrList[i].nodeID, mesh.addrList[i].address);
-     }
-    printf("**********************************\n");
+  printf("\n");
+  printf("********Assigned Addresses********\n");
+   for(int i=0; i<mesh.addrListTop; i++){
+     printf("NodeID: %u RF24Network Address: %d\n", mesh.addrList[i].nodeID, mesh.addrList[i].address);
+
+   }
+  printf("**********************************\n");
 }
 
+void MeshHandler::loop() {
+  while (1) {
+    updateMesh();
+
+    std::vector<sensor_data> buffer;
+
+    readAvailableData(buffer);
+
+    for (sensor_data d : buffer) {
+      if (!SocketHandler::getInstance().sendString(MessageConverter::getInstance().convertSensorDataToJson(d))) {
+        SocketHandler::getInstance().connect();
+      }
+    }
+
+    boost::this_thread::sleep_for(boost::chrono::milliseconds{2});
+  }
+}

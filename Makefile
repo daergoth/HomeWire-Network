@@ -19,6 +19,9 @@ SOURCES = ${PROGRAMS:=.cpp}
 
 all:
 	g++ -std=gnu++11 -Wall -I../ -pthread -lboost_system -lboost_thread -lrf24-bcm -lrf24network -lrf24mesh ${SOURCES} -o network_server
+
+debug:
+	g++ -std=gnu++11 -g -Wall -I../ -pthread -lboost_system -lboost_thread -lrf24-bcm -lrf24network -lrf24mesh ${SOURCES} -o network_server
 	
 
 clean:

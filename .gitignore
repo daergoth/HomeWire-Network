@@ -1,3 +1,5 @@
+cmake-build-debug/
 .idea/
 dhcplist.txt
 network_server
+CMakeLists.txt
