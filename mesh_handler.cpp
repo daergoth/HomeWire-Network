@@ -68,7 +68,7 @@ int MeshHandler::readAvailableData(std::vector<sensor_data>& buffer)
 bool MeshHandler::writeToActor(actor_command command) {
   radio_actor_command tmp{command.targetState};
 
-  return mesh.write(&tmp, 'A', sizeof(command), command.id);
+  return mesh.write(&tmp, 'A', sizeof(tmp), (uint8_t) command.id);
 }
 
 void MeshHandler::printAddressTable()
@@ -83,6 +83,9 @@ void MeshHandler::printAddressTable()
 }
 
 void MeshHandler::loop() {
+
+  boost::posix_time::ptime last = boost::posix_time::second_clock::local_time();
+
   while (1) {
     updateMesh();
 
@@ -94,6 +97,13 @@ void MeshHandler::loop() {
       if (!SocketHandler::getInstance().sendString(MessageConverter::getInstance().convertSensorDataToJson(d))) {
         SocketHandler::getInstance().connect();
       }
+    }
+
+    boost::posix_time::time_duration diff = boost::posix_time::second_clock::local_time() - last;
+    if (diff.total_seconds() >= 20) {
+      printAddressTable();
+
+      last = boost::posix_time::second_clock::local_time();
     }
 
     boost::this_thread::sleep_for(boost::chrono::milliseconds{2});

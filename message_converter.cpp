@@ -20,8 +20,17 @@ std::string MessageConverter::convertSensorDataToJson(sensor_data data)
 }
 
 actor_command MessageConverter::convertJsonToActorCommand(std::string command) {
-  json tmp = command;
+  std::cerr << "MessageConverter.convertJsonToActorCommand(): " << command << std::endl;
 
-  return {tmp["targetState"]};
+  json tmp = json::parse(command);
+
+  std::cerr <<  "tmp: " << tmp << std::endl;
+  std::cerr <<  "tmp[\"id\"]: " << tmp["id"] << std::endl;
+
+  actor_command result{tmp["id"], tmp["targetState"]};
+
+  std::cerr << "result: id:" << result.id << ", targetState:" << result.targetState << std::endl;
+
+  return result;
 }
 

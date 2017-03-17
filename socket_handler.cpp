@@ -34,17 +34,38 @@ bool SocketHandler::sendString(std::string message)
 
 void SocketHandler::loop() {
   while(1) {
-    while(socket.available()) {
-      char buffer[32];
+    if(socket.available()) {
+      boost::this_thread::sleep_for(boost::chrono::milliseconds{10});
 
-      socket.read_some(boost::asio::buffer(buffer, 32));
+      char buff[32];
+      size_t currB = 0;
 
-      actor_command command = MessageConverter::getInstance().convertJsonToActorCommand(buffer);
-
-      if(!MeshHandler::getInstance().writeToActor(command)) {
-        std::cerr << "MeshHandler.writeToActor() Error: {id:" << command.id << ", targetState: "
-                  << command.targetState << "}" << std::endl;
+      while(socket.available()) {
+        currB += socket.read_some(boost::asio::buffer(buff + currB * sizeof(char), 31 - currB));
       }
+      buff[currB] = 0;
+
+      std::cerr << "read bytes: " << currB << std::endl;
+      std::cerr <<  "buff: " << buff << std::endl;
+
+      for (int i = 0; i < 32; ++i) {
+        std::cerr << buff[i] << ". ";
+      }
+      std::cerr << std::endl;
+
+      if (currB) {
+        actor_command command = MessageConverter::getInstance().convertJsonToActorCommand(buff);
+
+        if(!MeshHandler::getInstance().writeToActor(command)) {
+          std::cerr << "MeshHandler.writeToActor() Error: {id:" << command.id << ", targetState: "
+                    << command.targetState << "}" << std::endl;
+        } else {
+          std::cerr << "write ok" << std::endl;
+        }
+      }
+
+
+      memset(buff, 0, 32);
     }
 
     boost::this_thread::sleep_for(boost::chrono::milliseconds{2});

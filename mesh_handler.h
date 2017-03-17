@@ -16,7 +16,7 @@ struct sensor_data {
 };
 
 struct actor_command {
-    uint8_t id;
+    short id;
     bool targetState;
 };
 
