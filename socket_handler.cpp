@@ -54,10 +54,10 @@ void SocketHandler::loop() {
       std::cerr << std::endl;
 
       if (currB) {
-        actor_command command = MessageConverter::getInstance().convertJsonToActorCommand(buff);
+        device_command command = MessageConverter::getInstance().convertJsonToDeviceCommand(buff);
 
-        if(!MeshHandler::getInstance().writeToActor(command)) {
-          std::cerr << "MeshHandler.writeToActor() Error: {id:" << command.id << ", targetState: "
+        if(!MeshHandler::getInstance().sendToDevice(command)) {
+          std::cerr << "MeshHandler.sendToDevice() Error: {id:" << command.id << ", targetState: "
                     << command.targetState << "}" << std::endl;
         } else {
           std::cerr << "write ok" << std::endl;

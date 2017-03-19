@@ -8,9 +8,9 @@ class MessageConverter {
 public:
     static MessageConverter& getInstance();
 
-    std::string convertSensorDataToJson(sensor_data data);
+    std::string convertDeviceDataToJson(device_data data);
 
-    actor_command convertJsonToActorCommand(std::string command);
+    device_command convertJsonToDeviceCommand(std::string command);
 private:
     static MessageConverter instance;
 

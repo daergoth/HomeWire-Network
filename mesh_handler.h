@@ -9,13 +9,14 @@
 #include <vector>
 #include <boost/thread.hpp>
 
-struct sensor_data {
+struct device_data {
     short id;
     float data;
     std::string type;
+    std::string category;
 };
 
-struct actor_command {
+struct device_command {
     short id;
     bool targetState;
 };
@@ -30,9 +31,9 @@ public:
     
     void updateMesh();
     
-    int readAvailableData(std::vector<sensor_data>& buffer);
+    int readAvailableData(std::vector<device_data>& buffer);
 
-    bool writeToActor(actor_command command);
+    bool sendToDevice(device_command command);
     
     void printAddressTable();
     
@@ -47,12 +48,12 @@ private:
 
     void loop();
 
-    struct radio_sensor_data {
+    struct radio_device_data {
         float data;
         char type[15];
     };
 
-    struct radio_actor_command {
+    struct radio_device_command {
         bool targetState;
     };
     

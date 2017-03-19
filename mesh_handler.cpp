@@ -29,7 +29,7 @@ void MeshHandler::updateMesh()
     mesh.DHCP();
 }
 
-int MeshHandler::readAvailableData(std::vector<sensor_data>& buffer)
+int MeshHandler::readAvailableData(std::vector<device_data>& buffer)
 {
   int dataCount = 0;
 
@@ -38,7 +38,7 @@ int MeshHandler::readAvailableData(std::vector<sensor_data>& buffer)
     RF24NetworkHeader header;
     network.peek(header);
 
-    radio_sensor_data dat;
+    radio_device_data dat;
 
     switch(header.type)
     {
@@ -46,9 +46,22 @@ int MeshHandler::readAvailableData(std::vector<sensor_data>& buffer)
       {
         network.read(header,&dat,sizeof(dat));
 
-        sensor_data tmp {mesh.getNodeID(header.from_node), dat.data, std::string(dat.type)};
+        device_data tmp {mesh.getNodeID(header.from_node), dat.data, std::string(dat.type), "sensor"};
 
         printf("Rcv sensor data from ID#%d (addr: %d): type:%s data:%f \n", tmp.id, header.from_node, tmp.type.c_str(), tmp.data);
+
+        buffer.push_back(tmp);
+
+        dataCount++;
+      }
+        break;
+      case 'A':
+      {
+        network.read(header,&dat,sizeof(dat));
+
+        device_data tmp {mesh.getNodeID(header.from_node), dat.data, std::string(dat.type), "actor"};
+
+        printf("Rcv actor data from ID#%d (addr: %d): type:%s data:%f \n", tmp.id, header.from_node, tmp.type.c_str(), tmp.data);
 
         buffer.push_back(tmp);
 
@@ -65,8 +78,8 @@ int MeshHandler::readAvailableData(std::vector<sensor_data>& buffer)
   return dataCount;
 }
 
-bool MeshHandler::writeToActor(actor_command command) {
-  radio_actor_command tmp{command.targetState};
+bool MeshHandler::sendToDevice(device_command command) {
+  radio_device_command tmp{command.targetState};
 
   return mesh.write(&tmp, 'A', sizeof(tmp), (uint8_t) command.id);
 }
@@ -89,12 +102,12 @@ void MeshHandler::loop() {
   while (1) {
     updateMesh();
 
-    std::vector<sensor_data> buffer;
+    std::vector<device_data> buffer;
 
     readAvailableData(buffer);
 
-    for (sensor_data d : buffer) {
-      if (!SocketHandler::getInstance().sendString(MessageConverter::getInstance().convertSensorDataToJson(d))) {
+    for (device_data d : buffer) {
+      if (!SocketHandler::getInstance().sendString(MessageConverter::getInstance().convertDeviceDataToJson(d))) {
         SocketHandler::getInstance().connect();
       }
     }
