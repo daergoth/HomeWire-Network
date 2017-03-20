@@ -54,7 +54,15 @@ void SocketHandler::loop() {
       std::cerr << std::endl;
 
       if (currB) {
-        device_command command = MessageConverter::getInstance().convertJsonToDeviceCommand(buff);
+
+        device_command command;
+
+        try {
+          command = MessageConverter::getInstance().convertJsonToDeviceCommand(buff);
+        } catch (std::exception& e) {
+          std::cerr << "Exception during json to command conversion: " << e.what() << std::endl;
+          continue;
+        }
 
         if(!MeshHandler::getInstance().sendToDevice(command)) {
           std::cerr << "MeshHandler.sendToDevice() Error: {id:" << command.id << ", targetState: "

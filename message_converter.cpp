@@ -21,16 +21,9 @@ std::string MessageConverter::convertDeviceDataToJson(device_data data)
 }
 
 device_command MessageConverter::convertJsonToDeviceCommand(std::string command) {
-  std::cerr << "MessageConverter.convertJsonToDeviceCommand(): " << command << std::endl;
-
   json tmp = json::parse(command);
 
-  std::cerr <<  "tmp: " << tmp << std::endl;
-  std::cerr <<  "tmp[\"id\"]: " << tmp["id"] << std::endl;
-
   device_command result{tmp["id"], tmp["targetState"]};
-
-  std::cerr << "result: id:" << result.id << ", targetState:" << result.targetState << std::endl;
 
   return result;
 }
