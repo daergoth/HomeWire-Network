@@ -18,7 +18,7 @@ struct device_data {
 
 struct device_command {
     short id;
-    bool targetState;
+    float targetState;
 };
 
 class MeshHandler {
@@ -54,7 +54,7 @@ private:
     };
 
     struct radio_device_command {
-        bool targetState;
+        float targetState;
     };
     
 };
