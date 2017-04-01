@@ -19,17 +19,14 @@ void SocketHandler::connect()
     std::cerr << "Socket connected!" << std::endl;
 }
 
-bool SocketHandler::sendString(std::string message)
+void SocketHandler::sendString(std::string message)
 {
+  json_buffer_mutex.lock();
+
   message.append("\n");
+	json_buffer.push_back(message);
 
-	try {
-		socket.write_some(boost::asio::buffer(message));
-	} catch (std::exception& e) {
-		return false;
-	}
-
-    return true;
+  json_buffer_mutex.unlock();
 }
 
 void SocketHandler::loop() {
@@ -64,16 +61,27 @@ void SocketHandler::loop() {
           continue;
         }
 
-        if(!MeshHandler::getInstance().sendToDevice(command)) {
-          std::cerr << "MeshHandler.sendToDevice() Error: {id:" << command.id << ", targetState: "
-                    << command.targetState << "}" << std::endl;
-        } else {
-          std::cerr << "write ok" << std::endl;
-        }
+        MeshHandler::getInstance().sendToDevice(command);
       }
 
 
       memset(buff, 0, 32);
+    }
+
+    if (json_buffer_mutex.try_lock()) {
+      for (std::string json : json_buffer) {
+        std::cerr << "JSON sending: \'" << json << "\' ...";
+
+        try {
+          socket.write_some(boost::asio::buffer(json));
+          std::cerr << "success" << std::endl;
+        } catch (std::exception& e) {
+          std::cerr << "FAIL" << std::endl;
+          connect();
+        }
+      }
+      json_buffer.clear();
+      json_buffer_mutex.unlock();
     }
 
     boost::this_thread::sleep_for(boost::chrono::milliseconds{2});

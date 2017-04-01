@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <mutex>
 #include <boost/thread.hpp>
 
 struct device_data {
@@ -33,7 +34,7 @@ public:
     
     int readAvailableData(std::vector<device_data>& buffer);
 
-    bool sendToDevice(device_command command);
+    void sendToDevice(device_command command);
     
     void printAddressTable();
     
@@ -43,6 +44,9 @@ private:
     RF24 radio;
     RF24Network network;
     RF24Mesh mesh;
+
+    std::vector<device_command> command_buffer;
+    std::mutex command_buffer_mutex;
 
     MeshHandler():radio(22, 0), network(radio), mesh(radio, network) {}
 

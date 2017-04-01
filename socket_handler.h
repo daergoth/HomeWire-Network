@@ -18,10 +18,13 @@ public:
 
     void connect();
 
-    bool sendString(std::string message);
+    void sendString(std::string message);
 
 private:
     static SocketHandler instance;
+
+    std::vector<std::string> json_buffer;
+    std::mutex json_buffer_mutex;
 
     boost::asio::io_service io_service;
 

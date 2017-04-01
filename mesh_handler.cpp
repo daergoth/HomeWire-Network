@@ -78,10 +78,12 @@ int MeshHandler::readAvailableData(std::vector<device_data>& buffer)
   return dataCount;
 }
 
-bool MeshHandler::sendToDevice(device_command command) {
-  radio_device_command tmp{command.targetState};
+void MeshHandler::sendToDevice(device_command command) {
+  command_buffer_mutex.lock();
 
-  return mesh.write(&tmp, 'A', sizeof(tmp), (uint8_t) command.id);
+  command_buffer.push_back(command);
+
+  command_buffer_mutex.unlock();
 }
 
 void MeshHandler::printAddressTable()
@@ -107,9 +109,23 @@ void MeshHandler::loop() {
     readAvailableData(buffer);
 
     for (device_data d : buffer) {
-      if (!SocketHandler::getInstance().sendString(MessageConverter::getInstance().convertDeviceDataToJson(d))) {
-        SocketHandler::getInstance().connect();
+      SocketHandler::getInstance().sendString(MessageConverter::getInstance().convertDeviceDataToJson(d));
+    }
+
+    if (command_buffer_mutex.try_lock()) {
+      for (device_command command : command_buffer) {
+        std::cerr << "Command sending: {id:" << command.id << ", targetState:" << command.targetState << "} ... ";
+        radio_device_command tmp{command.targetState};
+
+        if (mesh.write(&tmp, 'A', sizeof(tmp), (uint8_t) command.id)) {
+          std::cerr << "success" << std::endl;
+        } else {
+          std::cerr << "FAIL" << std::endl;
+        }
       }
+
+      command_buffer.clear();
+      command_buffer_mutex.unlock();
     }
 
     boost::posix_time::time_duration diff = boost::posix_time::second_clock::local_time() - last;
