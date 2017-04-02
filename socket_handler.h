@@ -32,6 +32,8 @@ private:
     tcp::resolver::query query;
     tcp::socket socket;
 
+    boost::asio::streambuf tcp_buffer;
+
     SocketHandler(std::string hostname, std::string port_num)
         :io_service(), resolver(io_service), query(tcp::v4(), hostname, port_num), socket(io_service) {}
 

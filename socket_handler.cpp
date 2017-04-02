@@ -32,30 +32,16 @@ void SocketHandler::sendString(std::string message)
 void SocketHandler::loop() {
   while(1) {
     if(socket.available()) {
-      boost::this_thread::sleep_for(boost::chrono::milliseconds{10});
+      size_t readBytes = boost::asio::read_until(socket, tcp_buffer, "\r\n");
 
-      char buff[32];
-      size_t currB = 0;
+      std::string readLine;
+      std::getline(std::istream(&tcp_buffer), readLine);
 
-      while(socket.available()) {
-        currB += socket.read_some(boost::asio::buffer(buff + currB * sizeof(char), 31 - currB));
-      }
-      buff[currB] = 0;
-
-      std::cerr << "read bytes: " << currB << std::endl;
-      std::cerr <<  "buff: " << buff << std::endl;
-
-      for (int i = 0; i < 32; ++i) {
-        std::cerr << buff[i] << ". ";
-      }
-      std::cerr << std::endl;
-
-      if (currB) {
-
+      if (readBytes) {
         device_command command;
 
         try {
-          command = MessageConverter::getInstance().convertJsonToDeviceCommand(buff);
+          command = MessageConverter::getInstance().convertJsonToDeviceCommand(readLine);
         } catch (std::exception& e) {
           std::cerr << "Exception during json to command conversion: " << e.what() << std::endl;
           continue;
@@ -64,8 +50,6 @@ void SocketHandler::loop() {
         MeshHandler::getInstance().sendToDevice(command);
       }
 
-
-      memset(buff, 0, 32);
     }
 
     if (json_buffer_mutex.try_lock()) {
@@ -87,3 +71,4 @@ void SocketHandler::loop() {
     boost::this_thread::sleep_for(boost::chrono::milliseconds{2});
   }
 }
+#pragma clang diagnostic pop
